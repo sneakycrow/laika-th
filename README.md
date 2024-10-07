@@ -15,7 +15,7 @@ directly as well_
 
 1. Initialize the project with `just init`
 2. Run the API locally with `just dev-api`
-3. Run the Frontend locally with `just dev-web` (optional)
+3. Run the Frontend locally with `just dev-web` (you may need to run this in a separate terminal)
 
 ## Deployment
 
