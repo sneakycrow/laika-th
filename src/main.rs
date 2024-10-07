@@ -1,4 +1,5 @@
 mod config;
+mod game;
 
 use axum::{
     response::IntoResponse,
@@ -6,6 +7,7 @@ use axum::{
     Router,
 };
 use config::Config;
+use game::{game_handler, start_game};
 use std::sync::Arc;
 use tower_http::{
     services::ServeDir,
@@ -48,7 +50,8 @@ async fn main() {
     };
     // Initialize the api routes
     let api = Router::new()
-        .route("/start", post(start_game))
+        .route("/game", post(start_game))
+        .route("/game/:game_id", get(game_handler))
         .with_state(state)
         // Add a trace layer to trace response and request times
         .layer(
@@ -70,8 +73,4 @@ async fn main() {
 
 async fn index_page() -> impl IntoResponse {
     "Tic tac toe coming soon!"
-}
-
-async fn start_game() -> impl IntoResponse {
-    "Starting a game"
 }
