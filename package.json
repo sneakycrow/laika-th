@@ -1,0 +1,12 @@
+{
+  "name": "laika-th",
+  "version": "1.0.0",
+  "description": "This application serves a tic tac toe game. The API acts as the opponent and the front-end allows for the user to play against it",
+  "keywords": [],
+  "author": "Zachary Corvidae <zach@sneakycrow.dev>",
+  "license": "ISC",
+  "private": true,
+  "workspaces": [
+    "web/"
+  ]
+}
