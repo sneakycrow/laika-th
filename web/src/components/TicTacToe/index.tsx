@@ -34,7 +34,7 @@ const TicTacToe = () => {
   // The ID of the current game being played
   const [gameID, setGameID] = useState("")
   const [moves, setMoves] = useState<Move[]>([])
-  const [isStatsShown, setShowStats] = useState(false)
+  const [isDetailsShown, setShowDetails] = useState(false)
   // Sends a request to the backend to start a game and updates the state appropriately
   const startGame = () => {
     // TODO: Send request to API which is expected to give an ID of the game
@@ -61,31 +61,28 @@ const TicTacToe = () => {
   }
   // Toggles the game stats being displayed
   const toggleStats = () => {
-    setShowStats(!isStatsShown)
+    setShowDetails(!isDetailsShown)
   }
 
   return (
-    <section className="grid grid-rows-game grid-cols-game gap-20 items-center justify-center max-w-screen-lg w-full">
+    <section className="grid grid-cols-2 gap-20 items-center justify-center max-w-screen-lg w-full">
       <GameBoard cells={CELLS_NUMBER} onCellClick={makePlayerMove} moves={moves} />
-      <aside className="flex items-center justify-center min-w-max gap-4 col-start-2">
-        <div className="flex flex-col space-y-4 text-center">
-          {gameID ? (
-            <>
-              <Button onClick={resetGame}>Start Over</Button>
-              <button className="underline" onClick={toggleStats}>
-                {isStatsShown ? "Hide" : "Show"} Stats
-              </button>
-            </>
-          ) : (
-            <p>Select any square to start</p>
-          )}
-
-          {gameID && isStatsShown && (
-            <p className="text-xs">
-              Game ID: <span className="underline text-base">{gameID}</span>
-            </p>
-          )}
-        </div>
+      <aside className="h-full flex flex-col items-start justify-start min-w-max gap-4 col-start-2">
+        {gameID ? (
+          <>
+            <Button onClick={resetGame}>Start Over</Button>
+            <button className="underline" onClick={toggleStats}>
+              {isDetailsShown ? "Hide" : "Show"} Details
+            </button>
+          </>
+        ) : (
+          <p>Select any square to start</p>
+        )}
+        {gameID && isDetailsShown && (
+          <p className="text-xs">
+            Game ID: <span className="underline text-base">{gameID}</span>
+          </p>
+        )}
       </aside>
     </section>
   )

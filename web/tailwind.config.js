@@ -29,12 +29,6 @@ export default {
         black: "#1f1f1f",
         white: "#fefcd9",
       },
-      gridTemplateRows: {
-        game: "1fr min-content",
-      },
-      gridTemplateColumns: {
-        game: "1fr min-content",
-      },
     },
   },
   plugins: [],
