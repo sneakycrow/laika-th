@@ -16,3 +16,11 @@ dev-web:
 
 init:
     @sh ./scripts/init.sh
+
+install: install-web install-api
+
+install-web:
+    npm i
+
+install-api:
+    cargo check
