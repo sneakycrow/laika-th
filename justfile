@@ -19,6 +19,7 @@ dev-web:
 
 init:
     @sh ./scripts/init.sh
+    @just install
 
 install: install-web install-api
 
