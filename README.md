@@ -8,6 +8,7 @@ Requirements:
   - Cargo
   - Node
   - Justfile (optional)
+  - Node
 
 _Note: The easiest way to run this app is via the justfile task runner. But, one can copy the commands from the justfile and run them
 directly as well_
