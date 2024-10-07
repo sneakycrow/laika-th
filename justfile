@@ -11,5 +11,8 @@ build: build-web build-api
 dev-api:
     cargo run
 
+dev-web:
+    npm run dev --workspace=web
+
 init:
     @sh ./scripts/init.sh
