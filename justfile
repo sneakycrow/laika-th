@@ -8,7 +8,7 @@ build-web:
 
 build: build-web build-api
 
-dev:
+dev-api:
     cargo run
 
 init:
