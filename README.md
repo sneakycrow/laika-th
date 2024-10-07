@@ -15,7 +15,8 @@ directly as well_
 
 1. Initialize the project with `just init`
 2. Run the API locally with `just dev-api`
-3. Run the Frontend locally with `just dev-web` (optional*)
+3. Run the Frontend locally with `just dev-web` (optional)
+
 _* You only need to do this if you want to develop the frontend. Alternatively, you can run `just build-web` and then turn on the `EMBED_SPA` feature to embed the frontend into the API_
 
 ## Deployment
