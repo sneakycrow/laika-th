@@ -68,6 +68,20 @@ const TicTacToe = () => {
     <section className="grid grid-cols-2 gap-20 items-center justify-center max-w-screen-lg w-full">
       <GameBoard cells={CELLS_NUMBER} onCellClick={makePlayerMove} moves={moves} />
       <aside className="h-full flex flex-col items-start justify-start min-w-max gap-4 col-start-2">
+        <div>
+          <p className="text-2xl ">
+            You -{" "}
+            <span className="font-semibold">
+              {renderPlayerToString(Player.User)}
+            </span>
+          </p>
+          <p className="text-2xl ">
+            Computer -{" "}
+            <span className="font-semibold">
+              {renderPlayerToString(Player.Computer)}
+            </span>
+          </p>
+        </div>
         {gameID ? (
           <>
             <Button onClick={resetGame}>Start Over</Button>
