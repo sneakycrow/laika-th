@@ -12,6 +12,7 @@ pub struct Config {
 
 impl Config {
     /// Creates a new config with default values
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Config {
             port: DEFAULT_PORT.to_string(),
