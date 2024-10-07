@@ -7,6 +7,6 @@
   "license": "ISC",
   "private": true,
   "workspaces": [
-    "web/"
+    "web"
   ]
 }
