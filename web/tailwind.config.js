@@ -32,6 +32,9 @@ export default {
       gridTemplateRows: {
         game: "1fr min-content",
       },
+      gridTemplateColumns: {
+        game: "1fr min-content",
+      },
     },
   },
   plugins: [],

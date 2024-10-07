@@ -34,6 +34,7 @@ const TicTacToe = () => {
   // The ID of the current game being played
   const [gameID, setGameID] = useState("")
   const [moves, setMoves] = useState<Move[]>([])
+  const [isStatsShown, setShowStats] = useState(false)
   // Sends a request to the backend to start a game and updates the state appropriately
   const startGame = () => {
     // TODO: Send request to API which is expected to give an ID of the game
@@ -55,19 +56,36 @@ const TicTacToe = () => {
   }
   // Resets the game to it's beginning state
   const resetGame = () => {
-    setGameID("")
     setMoves([])
+    startGame()
+  }
+  // Toggles the game stats being displayed
+  const toggleStats = () => {
+    setShowStats(!isStatsShown)
   }
 
   return (
-    <section className="grid grid-rows-game gap-20 items-center justify-center max-w-screen-md w-full">
+    <section className="grid grid-rows-game grid-cols-game gap-20 items-center justify-center max-w-screen-lg w-full">
       <GameBoard cells={CELLS_NUMBER} onCellClick={makePlayerMove} moves={moves} />
-      <aside className="flex items-center justify-center w-full gap-4">
-        {gameID ? (
-          <Button onClick={resetGame}>Start Over</Button>
-        ) : (
-          <p className="px-2 py-4">Click any square to start a new game</p>
-        )}
+      <aside className="flex items-center justify-center min-w-max gap-4 col-start-2">
+        <div className="flex flex-col space-y-4 text-center">
+          {gameID ? (
+            <>
+              <Button onClick={resetGame}>Start Over</Button>
+              <button className="underline" onClick={toggleStats}>
+                {isStatsShown ? "Hide" : "Show"} Stats
+              </button>
+            </>
+          ) : (
+            <p>Select any square to start</p>
+          )}
+
+          {gameID && isStatsShown && (
+            <p className="text-xs">
+              Game ID: <span className="underline text-base">{gameID}</span>
+            </p>
+          )}
+        </div>
       </aside>
     </section>
   )
