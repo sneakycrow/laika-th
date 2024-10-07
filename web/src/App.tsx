@@ -1,9 +1,10 @@
-function App() {
+import TicTacToe from "./components/TicTacToe"
 
+function App() {
   return (
-    <h1 className="text-3xl font-bold underline">
-      Hello world!
-    </h1>
+    <main className="w-screen h-screen flex items-center justify-center">
+      <TicTacToe />
+    </main>
   )
 }
 
