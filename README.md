@@ -2,9 +2,7 @@
 
 This application serves a tic tac toe game. The API acts as the opponent and the front-end allows for the user to play against it
 
-## Development
-
-Requirements:
+## Requirements
   - Cargo
   - Node
   - Justfile (optional)
