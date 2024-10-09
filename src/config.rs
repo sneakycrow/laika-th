@@ -6,13 +6,6 @@ pub struct Config {
 }
 
 impl Config {
-    /// Creates a new config with default values
-    #[allow(dead_code)]
-    pub fn new() -> Self {
-        Config {
-            port: DEFAULT_PORT.to_string(),
-        }
-    }
     /// Creates a new config with values from environment variables, falls back to default values
     pub fn from_env() -> Self {
         // Check for core networking such as PORT and HOST
