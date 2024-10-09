@@ -40,16 +40,9 @@ async fn main() {
         .unwrap();
     // Store shared data as state between routes
     let state = Arc::new(AppState { config });
-    // Initialize a router for serving the frontend
-    let fe = if let Some(web_dir) = state.config.web_dir.as_ref() {
-        // If web_dir is set, serve static files from that directory
-        Router::new().nest_service("/", ServeDir::new(web_dir))
-    } else {
-        // Otherwise, just serve a index placeholder
-        Router::new().route("/", get(index_page))
-    };
     // Initialize the api routes
-    let api = Router::new()
+    let app = Router::new()
+        .route("/", get(index_page))
         .route("/game", post(start_game))
         .route("/game/:game_id", get(update_game))
         .with_state(state)
@@ -64,8 +57,6 @@ async fn main() {
                         .latency_unit(LatencyUnit::Seconds),
                 ),
         );
-    // Merge the API and FE routers together into a single router
-    let app = Router::new().merge(fe).nest("/api", api);
     // Start the server
     tracing::debug!("listening on http://{}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
