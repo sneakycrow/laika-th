@@ -1,3 +1,5 @@
+mod storage;
+
 use axum::{
     extract::{Path, State},
     response::IntoResponse,
@@ -20,6 +22,11 @@ pub async fn start_game(State(state): State<crate::AppState>) -> impl IntoRespon
 struct Game {
     moves: [Move; 9],
     players: [Player; 2],
+}
+
+trait ManageGame {
+    /// Save a game to storage
+    async fn save_game(game: &Game, backend: storage::Backend);
 }
 
 struct Move {
