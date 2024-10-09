@@ -5,10 +5,10 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.7", features = ["tracing", "json"] }
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0", features = ["derive", "json"] }
 tokio = { version = "1.0", features = ["full"] }
 tokio-util = { version = "0.7", features = ["io"] }
 tower-http = { version = "0.6", features = ["fs", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-uuid = { version = "1.10", features = ["v4", "fast-rng"] }
+uuid = { version = "1.10", features = ["v4", "fast-rng", "serde"] }

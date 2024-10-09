@@ -42,7 +42,7 @@ async fn main() {
     // Initialize the api routes
     let app = Router::new()
         .route("/", get(index_page))
-        .route("/game", post(start_game))
+        .route("/game", get(start_game))
         .route("/game/:game_id", get(update_game))
         .with_state(state)
         // Add a trace layer to trace response and request times
