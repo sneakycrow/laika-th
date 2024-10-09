@@ -7,7 +7,7 @@ use axum::{
     Router,
 };
 use config::Config;
-use game::{start_game, update_game};
+use game::routes::{start_game, update_game};
 use std::sync::Arc;
 use tower_http::{
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
