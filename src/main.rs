@@ -7,7 +7,7 @@ use axum::{
     Router,
 };
 use config::Config;
-use game::{game_handler, start_game};
+use game::{start_game, update_game};
 use std::sync::Arc;
 use tower_http::{
     services::ServeDir,
@@ -51,7 +51,7 @@ async fn main() {
     // Initialize the api routes
     let api = Router::new()
         .route("/game", post(start_game))
-        .route("/game/:game_id", get(game_handler))
+        .route("/game/:game_id", get(update_game))
         .with_state(state)
         // Add a trace layer to trace response and request times
         .layer(

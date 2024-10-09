@@ -6,7 +6,7 @@ use axum::{
 };
 
 /// Updates an existing game with additional moves
-pub async fn game_handler(Path(game_id): Path<String>) -> impl IntoResponse {
+pub async fn update_game(Path(game_id): Path<String>) -> impl IntoResponse {
     // TODO: Receive move made from player
     // TODO: Get the Game from storage
     // TODO: Validate and append the move
