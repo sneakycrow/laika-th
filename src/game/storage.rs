@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use super::Game;
 
 /// Backend integrations for storing data
@@ -11,7 +13,7 @@ pub type BackendError = String;
 
 trait BackendStorage {
     // TODO: Add delete
-    async fn get(id: String) -> Game; // This will get an already existant game
+    async fn get(id: Uuid) -> Game; // This will get an already existant game
     /// For updating or creating a game. If a game doesn't exist with the ID given, one will be created
     /// TODO: Refactor create to be it's own function and probably error if a game doesn't already exist
     /// NOTE: ^ We should initiate a game with a create function
@@ -19,7 +21,7 @@ trait BackendStorage {
 }
 
 impl BackendStorage for Backend {
-    async fn get(id: String) -> Game {
+    async fn get(id: Uuid) -> Game {
         todo!("Implement getting a local json file");
     }
 
