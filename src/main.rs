@@ -10,7 +10,6 @@ use config::Config;
 use game::{start_game, update_game};
 use std::sync::Arc;
 use tower_http::{
-    services::ServeDir,
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     LatencyUnit,
 };
