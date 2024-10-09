@@ -19,6 +19,7 @@ pub async fn start_game(State(state): State<crate::AppState>) -> impl IntoRespon
 
 struct Game {
     moves: [Move; 9],
+    players: [Player; 2],
 }
 
 struct Move {
@@ -27,6 +28,6 @@ struct Move {
 }
 
 pub enum Player {
-    Computer,
-    Player(u32),
+    Computer,    // Non-human player
+    Player(u32), // Player 1, Player 2, etc
 }
