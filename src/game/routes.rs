@@ -22,7 +22,7 @@ pub async fn update_game(Path(game_id): Path<String>) -> impl IntoResponse {
 #[derive(Deserialize)]
 pub struct StartGame {
     /// Optional move to start the game with
-    first_move: Option<Move>,
+    move_position: Option<u32>,
     /// Player identifier
     player_id: String,
 }
@@ -34,16 +34,24 @@ pub async fn start_game(
 ) -> impl IntoResponse {
     // Initialize a new game with the given player id as a player at our configured storage path
     let mut game = Game::new_local()
-        .add_player(Player::Player(payload.player_id)) // Need to clone here so we can pass again downstream when making move
+        .add_player(Player::Player(payload.player_id.clone())) // Need to clone here so we can pass again downstream when making move
         .expect("Could not add player to game")
         .add_player(Player::Computer)
         .expect("Could not add computer to game");
 
     // If a first move was provided, add it to the game
     // TODO: If the client didn't make the first move, maybe we can?
-    if let Some(first_move) = payload.first_move {
+    if let Some(move_position) = payload.move_position {
+        // Construct a move from the move position
+        // This presumes the provided player_id made the move
+        // Since this is the first move, it's considered turn 1
+        let player_move = Move {
+            position: move_position,
+            player: Player::Player(payload.player_id),
+            turn: 1,
+        };
         game = game
-            .make_move(first_move)
+            .make_move(player_move)
             .expect("Could not add move to game");
     }
 

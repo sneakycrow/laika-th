@@ -78,8 +78,9 @@ impl Game {
 /// A move that a player can make in a game (currently only TicTacToe supported)
 #[derive(Deserialize, Serialize, Clone)]
 struct Move {
-    player: Player,
-    position: u32, // Maps to the cell that the move occurred, 1 - 9
+    player: Player, // The player that made the move
+    position: u32,  // Maps to the cell that the move occurred, 1 - 9
+    turn: u32,      // The turn a move was made
 }
 
 pub type PlayerID = String;
