@@ -7,7 +7,7 @@ use axum::{
 };
 use serde::Deserialize;
 
-use super::{Game, Move, Player};
+use super::{Game, GameStatus, Move, Player};
 
 #[derive(Deserialize)]
 pub struct GameUpdateRequest {
@@ -38,8 +38,8 @@ pub async fn update_game(
         .expect("Could not make player move");
     // Check if there is a winner after the player's move
     game.check_for_complete();
-    // If there's still no winner, make the next move
-    if game.winner.is_none() {
+    // If the game is still in progress, make a response move
+    if game.status == GameStatus::InProgress {
         game.make_cpu_move().expect("Could not make computer move");
         // Check if our move won
         game.check_for_complete();
