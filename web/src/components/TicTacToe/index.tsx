@@ -56,7 +56,7 @@ const TicTacToe = () => {
     // The ID of the current game being played
     const [gameID, setGameID] = useState("")
     // TODO: Make this editable by the user
-    const [playerID, setPlayerID] = useState("human")
+    const playerID = "human"
     const [gameStatus, setGameStatus] = useState<ServerGameStatus>("NotStarted")
     const [gameWinner, setGameWinner] = useState<string | null>(null)
     const [moves, setMoves] = useState<Move[]>([])
