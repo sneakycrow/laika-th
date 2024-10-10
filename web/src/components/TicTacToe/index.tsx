@@ -25,9 +25,28 @@ export const renderPlayerToString = (player: Player | undefined): string => {
     }
 }
 
+// A move in a game
 export type Move = {
+    // The player that made the move
     player: Player
+    // The cell the move was made in
     cell: number // Should be a number between 1 and 9
+    // The turn the move was made on
+    turn: number
+}
+
+// The expected response from both the start and update endpoints
+type ServerResponse = {
+    id: string // The game ID
+    moves: ServerMove[]
+    players: ServerPlayer[]
+}
+
+type ServerPlayer = { Player: string } | string
+type ServerMove = {
+    position: number
+    turn: number
+    player: { Player: string } | string
 }
 
 const TicTacToe = () => {
@@ -37,33 +56,89 @@ const TicTacToe = () => {
     const [isDetailsShown, setShowDetails] = useState(false)
     const [isPlayersTurn, setIsPlayersTurn] = useState(true)
     // Sends a request to the backend to start a game and updates the state appropriately
-    const startGame = async () => {
+    const startGame = async (first_move?: Move) => {
+        let reqBody: {
+            player_id: string
+            move_position?: number
+            turn?: number
+        } = {
+            player_id: "x",
+        }
+        // If a first move exists, push additional move data
+        if (first_move) {
+            reqBody.move_position = first_move.cell
+            reqBody.turn = 0
+        }
         const res = await fetch(`${import.meta.env.VITE_API_URL}/game`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-                player_id: "some_id",
-            }),
+            body: JSON.stringify(reqBody),
         })
         if (!res.ok) {
             throw "Bad response from API"
         }
         // The response is expected to contain a game ID we can reference in future updates
-        const json = await res.json()
+        const json = (await res.json()) as ServerResponse
+        // Runtime validation
         if (!json.id) {
             // Somethings gone wrong, throw an error for now
             throw "No game ID in response"
         }
         setGameID(json.id)
-    }
-    // A list of moves than have been made
-    const makePlayerMove = async (cell: number) => {
-        // If a game is new, start a new game, then make the move
-        if (!gameID) {
-            await startGame()
+        // The response should contain a full validated history of moves
+        // Runtime validation
+        if (!json.moves) {
+            throw "No move history in response"
         }
+        // Sync the moves from the server
+        const updatedMoves = parseServerMoves(json.moves)
+        setMoves(updatedMoves)
+    }
+    // Posts a new move to an existing game
+    const updateGame = async (move: Move, gameID: String) => {
+        const reqBody = {
+            move,
+        }
+        // TODO: These fetches to the API can probably be made into a wrapper
+        const res = await fetch(
+            `${import.meta.env.VITE_API_URL}/game/${gameID}`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(reqBody),
+            },
+        )
+        // TODO: Parse new move from computer
+    }
+    // Parses moves from the server into client side moves
+    const parseServerMoves = (moves: ServerMove[]): Move[] => {
+        /// Pulls and parses a player out of a server move
+        const getPlayerFromServerMove = (move: ServerMove): Player => {
+            // Check for a custom player id
+            if (typeof move.player === "object") {
+                // This is presumed to be a player with a custom ID
+                // We only need to represent that they're a player right now, TBD using custom IDs
+                return Player.User
+            }
+            // If it's the computer, it should just be a string 'Computer'
+            if (move.player === "Computer") {
+                return Player.Computer
+            }
+            // If we made it here, we've encountered something unexpected
+            throw "Unexpected error parsing player from server move"
+        }
+        return moves.map((move: ServerMove) => ({
+            cell: move.position,
+            player: getPlayerFromServerMove(move),
+            turn: move.turn,
+        })) as Move[]
+    }
+    // Sends a new move from the player (client) to the server
+    const makePlayerMove = async (cell: number) => {
         // If it's not the player's turn, they cannot make a move
         if (!isPlayersTurn) {
             return
@@ -77,12 +152,17 @@ const TicTacToe = () => {
         setIsPlayersTurn(false)
         // Moves made client side should always be the player
         // Add the new move to the list of moves
-        setMoves([...moves, { player: Player.User, cell }])
-        // TODO: Send our move to the computer so they can respond
-        // TODO: Push the computers move to our moves list
+        let newMove = { player: Player.User, cell, turn: 1 }
+        setMoves([...moves, newMove])
+        // If this is a new game, we can start the game initialized with our move
+        // If a game is new, start a new game, then make the move
+        // Otherwise, update the existing game
+        if (!gameID) {
+            await startGame(newMove)
+        } else {
+            await updateGame(newMove, gameID)
+        }
         // Allow the player to make their next move
-        // Temporary wait to test loading UI
-        await new Promise((resolve) => setTimeout(resolve, 3000))
         setIsPlayersTurn(true)
     }
     // Resets the game to it's beginning state
