@@ -4,16 +4,17 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// The different errors that can happen when processing a game
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Deserialize)]
 pub enum GameError {
     MaxMovesMade,
     MaxPlayersReached,
-    FailedToSaveGame,
+    CouldNotFindGame,
     CouldNotComputeMove,
+    BadGameData,
 }
 
 /// A Game of TicTacToe (other games tbd)
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct Game {
     /// The unique ID of a game
     id: Uuid,
@@ -22,7 +23,31 @@ struct Game {
     moves: Vec<Move>,
     /// The maximum amount of players for TicTacToe is 2 (x's and o's)
     players: Vec<Player>,
+    /// The status of the game
+    status: GameStatus,
+    /// The winner of the game
+    winner: Option<Player>,
 }
+
+/// The status of a given game
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub enum GameStatus {
+    NotStarted,
+    InProgress,
+    Complete,
+}
+
+/// The lines representing all possible winning combinations in Tic-Tac-Toe
+const TIC_TAC_TOE_LINES: [[u32; 3]; 8] = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9], // Rows
+    [1, 4, 7],
+    [2, 5, 8],
+    [3, 6, 9], // Columns
+    [1, 5, 9],
+    [3, 5, 7], // Diagonals
+];
 
 impl Game {
     // TODO: Add delete_player
@@ -33,26 +58,45 @@ impl Game {
             id,
             moves: vec![],
             players: vec![],
+            status: GameStatus::NotStarted,
+            winner: None,
         }
+    }
+    /// Gets an existing game from storage
+    pub async fn get(game_id: String, storage_prefix: String) -> Result<Game, GameError> {
+        // Read the file contents
+        let full_path = format!("{}/{}.json", storage_prefix, game_id);
+        let file_contents =
+            std::fs::read_to_string(full_path).map_err(|_| GameError::CouldNotFindGame)?;
+
+        // Deserialize the JSON into a Game struct
+        let game: Game =
+            serde_json::from_str(&file_contents).map_err(|_| GameError::BadGameData)?;
+
+        Ok(game)
     }
     /// Save a game to storage
     /// If a game doesn't already exist for the ID with the backend, one will be created
     pub async fn save_game(&self, storage_prefix: String) -> Result<&Self, GameError> {
         // Make sure our storage path exists first
-        std::fs::create_dir_all(&storage_prefix).map_err(|_| GameError::FailedToSaveGame)?;
+        std::fs::create_dir_all(&storage_prefix).map_err(|_| GameError::CouldNotFindGame)?;
         // Our file will be {id}.json, prepended with the storage prefix
         let full_path = format!("{}/{}.json", storage_prefix, self.id);
         // Serialize our game
-        let json = serde_json::to_string(self).map_err(|_| GameError::FailedToSaveGame)?;
+        let json = serde_json::to_string(self).map_err(|_| GameError::CouldNotFindGame)?;
         // Save the serialized game to storage
-        std::fs::write(full_path, json).map_err(|_| GameError::FailedToSaveGame)?;
+        std::fs::write(full_path, json).map_err(|_| GameError::CouldNotFindGame)?;
         Ok(self)
     }
     /// Validates a new move for the given game, returns true if move is allowed
     /// Checks to see if the maximum moves have been made before committing
     fn is_valid_move(&self, new_move: Move) -> Result<Move, GameError> {
-        const MAX_MOVES: usize = 9;
+        // Make sure the game hasn't already been won
+        if self.winner.is_some() {
+            return Err(GameError::MaxMovesMade);
+        }
         // Check if we're at our limit
+        const MAX_MOVES: usize = 9;
         if self.moves.len() >= MAX_MOVES {
             return Err(GameError::MaxMovesMade);
         }
@@ -72,91 +116,157 @@ impl Game {
         // Only push the move if it's valid
         // This will error if the move isn't valid
         let validated_move = self.is_valid_move(new_move)?;
+        // Before pushing the move, update the game state to in progress if the moves are empty
+        if self.moves.len() == 0 {
+            self.status = GameStatus::InProgress;
+        }
         self.moves.push(validated_move);
         Ok(self)
     }
     /// Makes a move on the computer behalf
     /// Note: This function _does not_ make your physical cpu move
     fn make_cpu_move(&mut self) -> Result<&Self, GameError> {
-        let cpu_move = self.best_next_move()?;
+        let cpu_move = self.best_next_move(Player::Computer)?;
         self.make_move(cpu_move)
     }
-    /// Computes the best next move to make in a given game
-    fn best_next_move(&self) -> Result<Move, GameError> {
-        // Check if there are any winning moves
-        for i in 1..9 {
-            if self.moves.iter().all(|m| m.position != i as u32) {
-                let test_move = Move {
-                    player: Player::Computer,
-                    position: i,
-                    turn: self.moves.len() as u32,
-                };
-                if self.would_win(&test_move) {
-                    return Ok(test_move);
-                }
-            }
-        }
-        // Block opponent's winning moves
-        for i in 1..9 {
-            if self.moves.iter().all(|m| m.position != i as u32) {
-                let test_move = Move {
-                    player: Player::Player("opponent".to_string()),
-                    position: i,
-                    turn: self.moves.len() as u32,
-                };
-                if self.would_win(&test_move) {
-                    return Ok(Move {
-                        player: Player::Computer,
-                        position: i,
-                        turn: self.moves.len() as u32,
+    /// Checks for a blocking move
+    fn check_blocking_moves(&self, player: Player) -> Option<Move> {
+        let opponent = match player {
+            Player::Computer => Player::Player(
+                self.players
+                    .iter()
+                    .find_map(|p| {
+                        if let Player::Player(id) = p {
+                            Some(id.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("No human player found"),
+            ),
+            Player::Player(_) => Player::Computer,
+        };
+
+        for line in &TIC_TAC_TOE_LINES {
+            // Check for occupied spaces in this line
+            let occupied = line
+                .iter()
+                .filter(|&&pos| {
+                    self.moves
+                        .iter()
+                        .any(|m| m.position == pos && m.player == opponent)
+                })
+                .count();
+            // If there is 2 occupied spaces, we have a blocking move available
+            if occupied == 2 {
+                if let Some(empty_pos) = line
+                    .iter()
+                    .find(|&&pos| self.moves.iter().all(|m| m.position != pos))
+                {
+                    return Some(Move {
+                        player,
+                        position: *empty_pos,
+                        turn: self.moves.len() as u32 + 1,
                     });
                 }
             }
         }
 
-        // If no winning or blocking moves, choose a random empty spot
-        let empty_spots: Vec<u32> = (0..9)
-            .filter(|&i| self.moves.iter().all(|m| m.position != i))
-            .collect();
-
-        if !empty_spots.is_empty() {
-            let random_index = rand::random::<usize>() % empty_spots.len();
-            return Ok(Move {
-                player: Player::Computer,
-                position: empty_spots[random_index],
-                turn: self.moves.len() as u32 + 1,
-            });
-        }
-
-        Err(GameError::CouldNotComputeMove)
+        None
     }
-
-    fn would_win(&self, test_move: &Move) -> bool {
-        let winning_combinations = [
-            [0, 1, 2],
-            [3, 4, 5],
-            [6, 7, 8], // Rows
-            [0, 3, 6],
-            [1, 4, 7],
-            [2, 5, 8], // Columns
-            [0, 4, 8],
-            [2, 4, 6], // Diagonals
-        ];
-
-        for combo in winning_combinations.iter() {
-            if combo.contains(&(test_move.position as usize))
-                && combo.iter().all(|&pos| {
+    /// Checks for a winning move
+    fn check_winning_moves(&self, player: Player) -> Option<Move> {
+        for line in &TIC_TAC_TOE_LINES {
+            let occupied = line
+                .iter()
+                .filter(|&&pos| {
                     self.moves
                         .iter()
-                        .any(|m| m.position == pos as u32 && m.player == test_move.player)
-                        || pos as u32 == test_move.position
+                        .any(|m| m.position == pos && m.player == player)
                 })
-            {
-                return true;
+                .count();
+
+            if occupied == 2 {
+                if let Some(empty_pos) = line
+                    .iter()
+                    .find(|&&pos| self.moves.iter().all(|m| m.position != pos))
+                {
+                    return Some(Move {
+                        player,
+                        position: *empty_pos,
+                        turn: self.moves.len() as u32 + 1,
+                    });
+                }
             }
         }
 
-        false
+        None
+    }
+
+    /// Computes the best next move to make in a given game
+    fn best_next_move(&self, player: Player) -> Result<Move, GameError> {
+        // Check if there are any winning moves
+        if let Some(winning_move) = self.check_winning_moves(player) {
+            return Ok(winning_move);
+        }
+        // Block opponent's winning moves
+        if let Some(blocking_move) = self.check_blocking_moves(Player::Computer) {
+            return Ok(blocking_move);
+        }
+        // If no winning or blocking moves, choose an empty spot
+        // Choose the center if it's empty
+        if self.moves.iter().all(|m| m.position != 5) {
+            return Ok(Move {
+                player: Player::Computer,
+                position: 5,
+                turn: self.moves.len() as u32 + 1,
+            });
+        }
+        // Choose a corner if available
+        for corner in [1, 3, 7, 9] {
+            if self.moves.iter().all(|m| m.position != corner) {
+                return Ok(Move {
+                    player: Player::Computer,
+                    position: corner,
+                    turn: self.moves.len() as u32 + 1,
+                });
+            }
+        }
+        // If no corners are available, choose any empty side
+        for side in [2, 4, 6, 8] {
+            if self.moves.iter().all(|m| m.position != side) {
+                return Ok(Move {
+                    player: Player::Computer,
+                    position: side,
+                    turn: self.moves.len() as u32 + 1,
+                });
+            }
+        }
+        tracing::error!("Could not find move");
+        Err(GameError::CouldNotComputeMove)
+    }
+    /// A function that checks for a winner and updates the game appropriately
+    fn check_for_winner(&mut self) -> &Self {
+        if let Some(winner) = self.has_won() {
+            self.status = GameStatus::Complete;
+            self.winner = Some(winner);
+        }
+        self
+    }
+    /// Calculates if a game has been won
+    fn has_won(&self) -> Option<Player> {
+        for line in TIC_TAC_TOE_LINES.iter() {
+            if let Some(first_move) = self.moves.iter().find(|m| m.position == line[0]) {
+                if line.iter().all(|&pos| {
+                    self.moves
+                        .iter()
+                        .any(|m| m.position == pos && m.player == first_move.player)
+                }) {
+                    return Some(first_move.player.clone());
+                }
+            }
+        }
+        None
     }
     /// Add a player to a game
     /// Checks to see if the maximum players have already been added before committing
@@ -182,7 +292,7 @@ struct Move {
 }
 
 pub type PlayerID = String;
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 /// A player in a game, which can be represented by a human player or the computer
 pub enum Player {
     Computer,         // Non-human player
