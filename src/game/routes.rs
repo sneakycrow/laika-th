@@ -40,7 +40,6 @@ pub async fn start_game(
         .expect("Could not add computer to game");
 
     // If a first move was provided, add it to the game
-    // TODO: If the client didn't make the first move, maybe we can?
     if let Some(move_position) = payload.move_position {
         // Construct a move from the move position
         // This presumes the provided player_id made the move
@@ -50,11 +49,11 @@ pub async fn start_game(
             player: Player::Player(payload.player_id),
             turn: 1,
         };
-        game = game
-            .make_move(player_move)
+        game.make_move(player_move)
             .expect("Could not add move to game");
+        // Next, have the computer make it's move in response
+        game.make_cpu_move().expect("Could not make computer move");
     }
-
     // Lastly, save the game
     let target_storage_path = state.config.storage_path.clone();
     game.save_game(target_storage_path)
