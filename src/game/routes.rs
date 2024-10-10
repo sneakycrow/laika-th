@@ -37,12 +37,12 @@ pub async fn update_game(
     game.make_move(player_move)
         .expect("Could not make player move");
     // Check if there is a winner after the player's move
-    game.check_for_winner();
+    game.check_for_complete();
     // If there's still no winner, make the next move
     if game.winner.is_none() {
         game.make_cpu_move().expect("Could not make computer move");
         // Check if our move won
-        game.check_for_winner();
+        game.check_for_complete();
     }
     // Lastly, save the game
     game.save_game(storage_path)

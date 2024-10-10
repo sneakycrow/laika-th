@@ -37,6 +37,9 @@ pub enum GameStatus {
     Complete,
 }
 
+const MAX_PLAYERS: usize = 2;
+const MAX_MOVES: usize = 9;
+
 /// The lines representing all possible winning combinations in Tic-Tac-Toe
 const TIC_TAC_TOE_LINES: [[u32; 3]; 8] = [
     [1, 2, 3],
@@ -96,7 +99,6 @@ impl Game {
             return Err(GameError::MaxMovesMade);
         }
         // Check if we're at our limit
-        const MAX_MOVES: usize = 9;
         if self.moves.len() >= MAX_MOVES {
             return Err(GameError::MaxMovesMade);
         }
@@ -246,11 +248,21 @@ impl Game {
         Err(GameError::CouldNotComputeMove)
     }
     /// A function that checks for a winner and updates the game appropriately
-    fn check_for_winner(&mut self) -> &Self {
-        if let Some(winner) = self.has_won() {
-            self.status = GameStatus::Complete;
-            self.winner = Some(winner);
-        }
+    fn check_for_complete(&mut self) -> &Self {
+        // Check if anyone has won or if there's a draw
+        match self.has_won() {
+            Some(winner) => {
+                // Mark the game as complete and declare winner
+                self.status = GameStatus::Complete;
+                self.winner = Some(winner);
+            }
+            None => {
+                // Check if game has no moves left, if so, presume a draw
+                if self.moves.len() >= MAX_MOVES {
+                    self.status = GameStatus::Complete;
+                }
+            }
+        };
         self
     }
     /// Calculates if a game has been won
@@ -273,7 +285,6 @@ impl Game {
     // TODO: If a human player, we should make sure they're not already in the game
     fn add_player(mut self, player: Player) -> Result<Self, GameError> {
         // TODO: If extending to other games, make dynamic
-        const MAX_PLAYERS: usize = 2;
         // Check if we're at our limit
         if self.players.len() >= MAX_PLAYERS {
             return Err(GameError::MaxPlayersReached);
