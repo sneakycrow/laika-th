@@ -64,6 +64,10 @@ const TicTacToe = () => {
         if (!gameID) {
             await startGame()
         }
+        // If it's not the player's turn, they cannot make a move
+        if (!isPlayersTurn) {
+            return
+        }
         // Make sure the cell they're targeting is empty
         if (moves.find((move) => move.cell === cell)) {
             return
@@ -77,6 +81,8 @@ const TicTacToe = () => {
         // TODO: Send our move to the computer so they can respond
         // TODO: Push the computers move to our moves list
         // Allow the player to make their next move
+        // Temporary wait to test loading UI
+        await new Promise((resolve) => setTimeout(resolve, 3000))
         setIsPlayersTurn(true)
     }
     // Resets the game to it's beginning state
@@ -91,20 +97,29 @@ const TicTacToe = () => {
 
     return (
         <section className="grid grid-cols-2 gap-20 items-center justify-center max-w-screen-lg w-full">
-            <GameBoard
-                cells={CELLS_NUMBER}
-                onCellClick={makePlayerMove}
-                moves={moves}
-            />
+            <div
+                className={`transition-opacity ${!isPlayersTurn ? "opacity-50" : ""}`}
+            >
+                <GameBoard
+                    cells={CELLS_NUMBER}
+                    onCellClick={makePlayerMove}
+                    moves={moves}
+                    isLoading={!isPlayersTurn}
+                />
+            </div>
             <aside className="h-full flex flex-col items-start justify-start min-w-max gap-4 col-start-2">
                 <div>
-                    <p className="text-2xl ">
+                    <p
+                        className={`text-2xl ${isPlayersTurn ? "underline" : ""}`}
+                    >
                         You -{" "}
                         <span className="font-semibold">
                             {renderPlayerToString(Player.User)}
                         </span>
                     </p>
-                    <p className="text-2xl ">
+                    <p
+                        className={`text-2xl ${!isPlayersTurn ? "underline animate-bounce" : ""}`}
+                    >
                         Computer -{" "}
                         <span className="font-semibold">
                             {renderPlayerToString(Player.Computer)}
