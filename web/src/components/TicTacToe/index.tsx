@@ -38,22 +38,27 @@ export type Move = {
 // The expected response from both the start and update endpoints
 type ServerResponse = {
     id: string // The game ID
-    moves: ServerMove[]
-    players: ServerPlayer[]
+    moves: ServerMove[] // The move history of the game
+    players: ServerPlayer[] // Players participating in the game
+    status: ServerGameStatus // Status of the game
+    winner: string | null
 }
 
-type ServerPlayer = { Player: string } | string
+type ServerPlayer = { Player: string } | string // A player will have an ID associated with them
 type ServerMove = {
-    position: number
-    turn: number
-    player: { Player: string } | string
+    position: number // The cell the move was made in
+    turn: number // The turn the move was made on
+    player: { Player: string } | string // The player that made the move
 }
+type ServerGameStatus = "NotStarted" | "InProgress" | "Complete"
 
 const TicTacToe = () => {
     // The ID of the current game being played
     const [gameID, setGameID] = useState("")
     // TODO: Make this editable by the user
     const [playerID, setPlayerID] = useState("human")
+    const [gameStatus, setGameStatus] = useState<ServerGameStatus>("NotStarted")
+    const [gameWinner, setGameWinner] = useState<string | null>(null)
     const [moves, setMoves] = useState<Move[]>([])
     const [isDetailsShown, setShowDetails] = useState(false)
     const [isPlayersTurn, setIsPlayersTurn] = useState(true)
@@ -97,6 +102,13 @@ const TicTacToe = () => {
         // Sync the moves from the server
         const updatedMoves = parseServerMoves(json.moves)
         setMoves(updatedMoves)
+        // We expect the game to be in progress, but this can be extended later for two human players
+        // For example, starting a game but letting your opponent make the first move
+        // Runtime validation
+        if (!json.status) {
+            throw "No game status in response"
+        }
+        setGameStatus(json.status)
     }
     // Posts a new move to an existing game
     const updateGame = async (move: Move, gameID: String) => {
@@ -123,6 +135,18 @@ const TicTacToe = () => {
         // Sync the moves from the server
         const updatedMoves = parseServerMoves(json.moves)
         setMoves(updatedMoves)
+        // Additionally, we want to sync the status of the game in case someone won
+        // Runtime validation
+        if (!json.status) {
+            throw "No game status in response"
+        }
+        setGameStatus(json.status)
+        // Additionally, check if there's a winner
+        // Runtime validation
+        if (!json.winner) {
+            throw "No game status in response"
+        }
+        setGameWinner(json.winner)
     }
     // Parses moves from the server into client side moves
     const parseServerMoves = (moves: ServerMove[]): Move[] => {
@@ -149,6 +173,10 @@ const TicTacToe = () => {
     }
     // Sends a new move from the player (client) to the server
     const makePlayerMove = async (cell: number) => {
+        // If the game is completed, no moves can be made
+        if (gameStatus === "Complete") {
+            return
+        }
         // If it's not the player's turn, they cannot make a move
         if (!isPlayersTurn) {
             return
@@ -167,10 +195,14 @@ const TicTacToe = () => {
         // If this is a new game, we can start the game initialized with our move
         // If a game is new, start a new game, then make the move
         // Otherwise, update the existing game
-        if (!gameID) {
-            await startGame(newMove)
-        } else {
-            await updateGame(newMove, gameID)
+        try {
+            if (!gameID) {
+                await startGame(newMove)
+            } else {
+                await updateGame(newMove, gameID)
+            }
+        } catch (e) {
+            console.error("Server error starting/updating game: ", e)
         }
         // Allow the player to make their next move
         setIsPlayersTurn(true)
@@ -179,6 +211,8 @@ const TicTacToe = () => {
     const resetGame = () => {
         setMoves([])
         startGame()
+        setGameStatus("InProgress")
+        setGameWinner(null)
     }
     // Toggles the game stats being displayed
     const toggleStats = () => {
@@ -186,7 +220,23 @@ const TicTacToe = () => {
     }
 
     return (
-        <section className="grid grid-cols-2 gap-20 items-center justify-center max-w-screen-lg w-full">
+        <section className="grid grid-cols-2 gap-20 max-w-screen-lg w-full">
+            <div className="col-span-2">
+                {gameStatus === "Complete" &&
+                    (gameWinner !== null ? (
+                        <p className="text-huge font-extrabold text-blue-500 w-full text-center">
+                            {gameWinner === "Computer"
+                                ? renderPlayerToString(Player.Computer)
+                                : renderPlayerToString(Player.User)}
+                            {"'s "}
+                            have won!
+                        </p>
+                    ) : (
+                        <p className="text-huge font-extrabold text-red-500 w-full text-center">
+                            DRAW!
+                        </p>
+                    ))}
+            </div>
             <div
                 className={`transition-opacity ${!isPlayersTurn ? "opacity-50" : ""}`}
             >
@@ -200,7 +250,7 @@ const TicTacToe = () => {
             <aside className="h-full flex flex-col items-start justify-start min-w-max gap-4 col-start-2">
                 <div>
                     <p
-                        className={`text-2xl ${isPlayersTurn ? "underline" : ""}`}
+                        className={`text-2xl ${isPlayersTurn ? "underline" : ""} ${gameWinner && gameWinner !== "Computer" ? "text-blue-500" : ""}`}
                     >
                         You -{" "}
                         <span className="font-semibold">
@@ -208,7 +258,7 @@ const TicTacToe = () => {
                         </span>
                     </p>
                     <p
-                        className={`text-2xl ${!isPlayersTurn ? "underline animate-bounce" : ""}`}
+                        className={`text-2xl ${!isPlayersTurn ? "underline animate-bounce" : ""} ${gameWinner && gameWinner === "Computer" ? "text-blue-500" : ""}`}
                     >
                         Computer -{" "}
                         <span className="font-semibold">
