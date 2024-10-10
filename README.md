@@ -1,4 +1,5 @@
 # laika-th (tic tac toe)
+[![build](https://github.com/sneakycrow/laika-th/actions/workflows/build.yml/badge.svg)](https://github.com/sneakycrow/laika-th/actions/workflows/build.yml)
 
 This application serves a tic tac toe game. The API acts as the opponent and the front-end allows for the user to play against it
 
