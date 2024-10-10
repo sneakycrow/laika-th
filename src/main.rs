@@ -17,7 +17,6 @@ use tower_http::{
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-// TODO: Add unit that allows us to get a game from storage
 pub struct AppState {
     config: Config,
 }
@@ -42,7 +41,6 @@ async fn main() {
     let state = Arc::new(AppState { config });
     // Initialize the api routes
     let app = Router::new()
-        .route("/", get(index_page))
         .route("/game", post(start_game))
         .route("/game/:game_id", post(update_game))
         .with_state(state)
@@ -62,8 +60,4 @@ async fn main() {
     // Start the server
     tracing::debug!("listening on http://{}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
-}
-
-async fn index_page() -> impl IntoResponse {
-    "Tic tac toe coming soon!"
 }
