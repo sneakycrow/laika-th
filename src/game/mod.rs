@@ -37,9 +37,15 @@ impl Game {
     }
     /// Save a game to storage
     /// If a game doesn't already exist for the ID with the backend, one will be created
-    pub async fn save_game(&self, storage_path: String) -> Result<&Self, GameError> {
+    pub async fn save_game(&self, storage_prefix: String) -> Result<&Self, GameError> {
+        // Make sure our storage path exists first
+        std::fs::create_dir_all(&storage_prefix).map_err(|_| GameError::FailedToSaveGame)?;
+        // Our file will be {id}.json, prepended with the storage prefix
+        let full_path = format!("{}/{}.json", storage_prefix, self.id);
+        // Serialize our game
         let json = serde_json::to_string(self).map_err(|_| GameError::FailedToSaveGame)?;
-        std::fs::write(storage_path, json).map_err(|_| GameError::FailedToSaveGame)?;
+        // Save the serialized game to storage
+        std::fs::write(full_path, json).map_err(|_| GameError::FailedToSaveGame)?;
         Ok(self)
     }
     /// Append a new move to a game
