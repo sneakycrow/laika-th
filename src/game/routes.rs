@@ -23,12 +23,33 @@ pub async fn update_game(
     State(state): State<Arc<crate::AppState>>,
     Json(payload): Json<GameUpdateRequest>,
 ) -> impl IntoResponse {
-    // TODO: Receive move made from player
-    // TODO: Get the Game from storage
-    // TODO: Validate and append the move
-    // TODO: Make another move as the computer
-    // TODO: Return move made to client
-    format!("request for game {}", game_id)
+    // First, get our game from the database
+    let storage_path = state.config.storage_path.clone();
+    let mut game = Game::get(game_id, storage_path.clone())
+        .await
+        .expect("Could not find game");
+    // Next, make the move requested
+    let player_move = Move {
+        position: payload.move_position.expect("Move position is required"),
+        player: Player::Player(payload.player_id),
+        turn: game.moves.len() as u32 + 1,
+    };
+    game.make_move(player_move)
+        .expect("Could not make player move");
+    // Check if there is a winner after the player's move
+    game.check_for_winner();
+    // If there's still no winner, make the next move
+    if game.winner.is_none() {
+        game.make_cpu_move().expect("Could not make computer move");
+        // Check if our move won
+        game.check_for_winner();
+    }
+    // Lastly, save the game
+    game.save_game(storage_path)
+        .await
+        .expect("Could not save game");
+
+    Json(game)
 }
 
 /// Initializes a new game, with optional included first move

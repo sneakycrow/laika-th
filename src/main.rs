@@ -44,7 +44,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(index_page))
         .route("/game", post(start_game))
-        .route("/game/:game_id", get(update_game))
+        .route("/game/:game_id", post(update_game))
         .with_state(state)
         // Add a cors layer so our frontend can request to us
         .layer(CorsLayer::permissive())

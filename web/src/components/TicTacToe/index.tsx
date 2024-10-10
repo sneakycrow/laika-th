@@ -13,10 +13,10 @@ export enum Player {
 export const renderPlayerToString = (player: Player | undefined): string => {
     switch (player) {
         case Player.Computer: {
-            return "o"
+            return "x"
         }
         case Player.User: {
-            return "x"
+            return "o"
         }
         case undefined:
         default: {
@@ -52,6 +52,8 @@ type ServerMove = {
 const TicTacToe = () => {
     // The ID of the current game being played
     const [gameID, setGameID] = useState("")
+    // TODO: Make this editable by the user
+    const [playerID, setPlayerID] = useState("human")
     const [moves, setMoves] = useState<Move[]>([])
     const [isDetailsShown, setShowDetails] = useState(false)
     const [isPlayersTurn, setIsPlayersTurn] = useState(true)
@@ -62,7 +64,7 @@ const TicTacToe = () => {
             move_position?: number
             turn?: number
         } = {
-            player_id: "x",
+            player_id: playerID,
         }
         // If a first move exists, push additional move data
         if (first_move) {
@@ -99,7 +101,8 @@ const TicTacToe = () => {
     // Posts a new move to an existing game
     const updateGame = async (move: Move, gameID: String) => {
         const reqBody = {
-            move,
+            move_position: move.cell,
+            player_id: playerID,
         }
         // TODO: These fetches to the API can probably be made into a wrapper
         const res = await fetch(
@@ -112,7 +115,14 @@ const TicTacToe = () => {
                 body: JSON.stringify(reqBody),
             },
         )
-        // TODO: Parse new move from computer
+        const json = (await res.json()) as ServerResponse
+        // Runtime validation
+        if (!json.moves) {
+            throw "No move history in response"
+        }
+        // Sync the moves from the server
+        const updatedMoves = parseServerMoves(json.moves)
+        setMoves(updatedMoves)
     }
     // Parses moves from the server into client side moves
     const parseServerMoves = (moves: ServerMove[]): Move[] => {
