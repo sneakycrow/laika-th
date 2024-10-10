@@ -28,3 +28,6 @@ install-web:
 
 install-api:
     cargo check
+
+clean-data:
+    rm -rf $STORAGE_PATH/*
