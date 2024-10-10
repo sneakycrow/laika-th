@@ -1,11 +1,7 @@
 mod config;
 mod game;
 
-use axum::{
-    response::IntoResponse,
-    routing::{get, post},
-    Router,
-};
+use axum::{routing::post, Router};
 use config::Config;
 use game::routes::{start_game, update_game};
 use std::sync::Arc;
