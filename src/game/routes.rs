@@ -9,8 +9,20 @@ use serde::Deserialize;
 
 use super::{Game, Move, Player};
 
+#[derive(Deserialize)]
+pub struct GameUpdateRequest {
+    /// Optional move to start the game with
+    move_position: Option<u32>,
+    /// Player identifier
+    player_id: String,
+}
+
 /// Updates an existing game with additional moves
-pub async fn update_game(Path(game_id): Path<String>) -> impl IntoResponse {
+pub async fn update_game(
+    Path(game_id): Path<String>,
+    State(state): State<Arc<crate::AppState>>,
+    Json(payload): Json<GameUpdateRequest>,
+) -> impl IntoResponse {
     // TODO: Receive move made from player
     // TODO: Get the Game from storage
     // TODO: Validate and append the move
@@ -19,18 +31,10 @@ pub async fn update_game(Path(game_id): Path<String>) -> impl IntoResponse {
     format!("request for game {}", game_id)
 }
 
-#[derive(Deserialize)]
-pub struct StartGame {
-    /// Optional move to start the game with
-    move_position: Option<u32>,
-    /// Player identifier
-    player_id: String,
-}
-
 /// Initializes a new game, with optional included first move
 pub async fn start_game(
     State(state): State<Arc<crate::AppState>>,
-    Json(payload): Json<StartGame>,
+    Json(payload): Json<GameUpdateRequest>,
 ) -> impl IntoResponse {
     // Initialize a new game with the given player id as a player at our configured storage path
     let mut game = Game::new_local()
