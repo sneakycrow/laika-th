@@ -37,7 +37,9 @@ pub enum GameStatus {
     Complete,
 }
 
+/// Maximum players in TicTacToe
 const MAX_PLAYERS: usize = 2;
+/// Maximum moves in TicTacToe
 const MAX_MOVES: usize = 9;
 
 /// The lines representing all possible winning combinations in Tic-Tac-Toe
@@ -94,25 +96,29 @@ impl Game {
     /// Validates a new move for the given game, returns true if move is allowed
     /// Checks to see if the maximum moves have been made before committing
     fn is_valid_move(&self, new_move: Move) -> Result<Move, GameError> {
-        // Make sure the game hasn't already been won
-        if self.winner.is_some() {
+        // Make sure the game isn't already completed
+        if self.status == GameStatus::Complete {
+            tracing::debug!("Game already completed");
             return Err(GameError::MaxMovesMade);
         }
-        // Check if we're at our limit
+        // Check if we're at our move limit
         if self.moves.len() >= MAX_MOVES {
+            tracing::debug!("No more moves available");
             return Err(GameError::MaxMovesMade);
         }
         // Make sure the position is between 1 and 9
         if new_move.position < 1 || new_move.position > 9 {
+            tracing::debug!("Bad move position provided");
             return Err(GameError::CouldNotComputeMove);
         }
         // Check if the position is already occupied
         if self.moves.iter().any(|m| m.position == new_move.position) {
+            tracing::debug!("Position already occupied");
             return Err(GameError::CouldNotComputeMove);
         }
         Ok(new_move)
     }
-    /// Append a new move to a game
+    /// Validate and append a new move to a game
     // TODO: Check if the player making the move is in our game
     fn make_move(&mut self, new_move: Move) -> Result<&Self, GameError> {
         // Only push the move if it's valid
@@ -133,6 +139,7 @@ impl Game {
     }
     /// Checks for a blocking move
     fn check_blocking_moves(&self, player: Player) -> Option<Move> {
+        // Get our opponent
         let opponent = match player {
             Player::Computer => Player::Player(
                 self.players
@@ -148,7 +155,7 @@ impl Game {
             ),
             Player::Player(_) => Player::Computer,
         };
-
+        // See if our opponent has any winning moves coming up
         for line in &TIC_TAC_TOE_LINES {
             // Check for occupied spaces in this line
             let occupied = line
@@ -178,7 +185,9 @@ impl Game {
     }
     /// Checks for a winning move
     fn check_winning_moves(&self, player: Player) -> Option<Move> {
+        // Go through each possible line and see if there's a 3rd cell we can complete it with (winning the game)
         for line in &TIC_TAC_TOE_LINES {
+            // Get occupied cells in this line
             let occupied = line
                 .iter()
                 .filter(|&&pos| {
@@ -187,7 +196,7 @@ impl Game {
                         .any(|m| m.position == pos && m.player == player)
                 })
                 .count();
-
+            // See if it has 2/3 of the cells filled out
             if occupied == 2 {
                 if let Some(empty_pos) = line
                     .iter()
@@ -247,7 +256,7 @@ impl Game {
         tracing::error!("Could not find move");
         Err(GameError::CouldNotComputeMove)
     }
-    /// A function that checks for a winner and updates the game appropriately
+    /// Checks to see if the game is complete and declares a winner if one exists
     fn check_for_complete(&mut self) -> &Self {
         // Check if anyone has won or if there's a draw
         match self.has_won() {
@@ -265,8 +274,9 @@ impl Game {
         };
         self
     }
-    /// Calculates if a game has been won
+    /// Calculates if a game has been won by a player
     fn has_won(&self) -> Option<Player> {
+        // Go through each line and see if a player has completed it
         for line in TIC_TAC_TOE_LINES.iter() {
             if let Some(first_move) = self.moves.iter().find(|m| m.position == line[0]) {
                 if line.iter().all(|&pos| {
