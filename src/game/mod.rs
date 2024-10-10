@@ -21,7 +21,6 @@ struct Game {
     /// The maximum amount of moves that can be made in TicTacToe is 9 (9 cells)
     moves: Vec<Move>,
     /// The maximum amount of players for TicTacToe is 2 (x's and o's)
-    // TODO: If other game types are supported, make this dynamic
     players: Vec<Player>,
 }
 
